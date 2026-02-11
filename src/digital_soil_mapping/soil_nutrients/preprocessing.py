@@ -1,5 +1,4 @@
 from __future__ import annotations
-import json
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -9,6 +8,11 @@ import rasterio
 from rasterio.warp import transform
 from sklearn.impute import SimpleImputer
 
+
+DEFAULT_BAND_NAMES = [
+    "elev_m", "slope_deg", "ndvi", "evi", "lst_day_c",
+    "aridity_index", "rain_mm", "flowacc_cells", "twi"
+]
 
 def to_snake_case(name: str) -> str:
     name = name.strip()
@@ -148,16 +152,32 @@ def build_datasets_by_target(
         datasets[target] = pd.concat([X_imp, y], axis=1)
     return datasets
 
-def save_one_json(
-    out_path: str | Path,
-    feature_map: Dict[str, List[str]],
-    datasets: Dict[str, pd.DataFrame],
-) -> None:
-    payload = {
-        "feature_map": feature_map,
-        "data": {t: df.to_dict(orient="records") for t, df in datasets.items()},
-    }
-    out_path = Path(out_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False)
+
+def run_preprocessing(
+    train_csv: str | Path,
+    raster_tif: str | Path,
+    base_features: List[str],
+    band_names: Optional[List[str]] = None,
+    drop_predictors: Optional[List[str]] = None,
+    impute_strategy: str = "median",
+) -> Dict[str, pd.DataFrame]:
+    band_names = band_names or DEFAULT_BAND_NAMES
+    df = pd.read_csv(train_csv)
+    df = harmonize_columns(df)
+    df = add_profile_features(df)
+    df = sample_multiband_raster_to_df(
+        df=df,
+        raster_path=raster_tif,
+        lon_col="longitude",
+        lat_col="latitude",
+        band_names=band_names,
+    )
+
+    feature_map = build_feature_map(base_features)
+    dfs_clean = build_datasets_by_target(
+        df=df,
+        feature_map=feature_map,
+        drop_predictors=drop_predictors or ["c_total"],
+        impute_strategy=impute_strategy,
+    )
+    return dfs_clean
