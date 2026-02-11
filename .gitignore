@@ -1,0 +1,15 @@
+.venv/
+env/
+venv/
+.python-version
+__pycache__/
+*.pyc
+data/processed/*.json
+data/raw/*.tif
+data/raw/*.tiff
+data/raw/*.tif
+data/raw/*.tiff
+data/raw/*.img
+data/raw/*.vrt
+notebooks/.ipynb_checkpoints/
+.DS_Store
