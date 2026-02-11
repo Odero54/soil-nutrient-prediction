@@ -12,4 +12,5 @@ data/raw/*.tiff
 data/raw/*.img
 data/raw/*.vrt
 notebooks/.ipynb_checkpoints/
+soil-nutrient/__pycache__/
 .DS_Store
